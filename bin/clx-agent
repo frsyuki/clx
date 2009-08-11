@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+
+begin
+require 'rubygems'
+rescue Exception
+end
+require 'clx/default'
+require 'clx/core'
+require 'clx/addr'
+require 'optparse'
+
+opt = {
+	:vardir => "./var",
+}
+
+op = OptionParser.new
+op.on('-r', '--dir DIR', "output directory") {|s|
+	opt[:vardir] = s }
+op.banner += " <module dir> [key=value ...] <self address> <manager address>"
+
+op.parse!(ARGV)
+
+module_dir = ARGV.shift
+unless module_dir
+	puts op.to_s
+	exit 1
+end
+
+info = {}
+info_i = 0
+ARGV.each {|arg|
+	key, match = arg.split("=",2)
+	break unless match
+	info[key] = match
+	info_i += 1
+}
+ARGV.slice!(0,info_i)
+
+self_addr = ARGV.shift
+manager_addr = ARGV.shift
+
+if !manager_addr
+	puts op.to_s
+	exit 1
+end
+
+
+self_host, self_port = self_addr.split(":",2)
+self_port ||= CLX::AGENT_DEFAULT_PORT
+
+manager_host, manager_port = manager_addr.split(":",2)
+manager_port ||= CLX::MANAGER_DEFAULT_PORT
+
+
+config = {
+	:self_addr => Address.new(self_host, self_port),
+	:mgr_addr  => Address.new(manager_host, manager_port),
+	:vardir => opt[:vardir],
+	:info   => info,
+}
+
+core = CLX::Core.new("<any>", self_port, config)
+core.scan_module("#{CLX::MOD_DIR}/agent/*.rb")
+core.scan_module("#{module_dir}/*.rb")
+core.run
+

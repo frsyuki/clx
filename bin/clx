@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+
+begin
+require 'rubygems'
+rescue Exception
+end
+require 'msgpack/rpc'
+require 'clx/default'
+require 'clx/addr'
+
+
+manager = ARGV.shift
+
+unless manager
+	puts "Usage #{File.basename($0)} <manager> <command> [args...]"
+	exit 1
+end
+
+
+matches = []
+matches_i = 0
+ARGV.each {|arg|
+	key, match = arg.split("=",2)
+	break unless match
+	matches.push [key, match]
+	matches_i += 1
+}
+ARGV.slice!(0,matches_i)
+
+mgr_host, mgr_port = manager.split(':',2)
+mgr_port ||= CLX::MANAGER_DEFAULT_PORT
+
+
+c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+agents = c.call(:agents)
+c.close
+
+lo = MessagePack::RPC::Loop.new
+
+
+agents.map! do |addr|
+	host, port = Address.parse(addr)
+	client = MessagePack::RPC::Client.new(host, port, lo)
+
+	reqs = []
+	matches.each {|key, match|
+		reqs.push client.send(:match, key, match)
+	}
+
+	[client, reqs]
+end
+
+agents.reject! do |client, reqs|
+	remove = false
+	reqs.each {|x|
+		x.join
+		if x.error || !x.result
+			remove = true
+		end
+	}
+	remove
+end
+
+if ARGV.empty?
+	agents.each do |client, req|
+		puts "#{client.host}:#{client.port}"
+	end
+	exit
+end
+
+agents.map! do |client, _|
+	req = client.send(*ARGV)
+	[client, req]
+end
+
+agents.each do |client, req|
+	req.join
+	puts "#{client.host}:#{client.port}:"
+	if req.error
+		puts "    #{req.error}"
+	elsif req.result.is_a?(String)
+		puts "   #{req.result}"
+	else
+		puts "   #{req.result.inspect}"
+	end
+	puts ""
+end
+

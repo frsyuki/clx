@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+begin
+require 'rubygems'
+rescue Exception
+end
+require 'clx/default'
+require 'clx/core'
+require 'clx/addr'
+require 'optparse'
+
+opt = {
+	:port => CLX::MANAGER_DEFAULT_PORT,
+	:addr => "<any>",
+}
+
+op = OptionParser.new
+op.on('-p', '--port PORT', "listen port", Integer) {|i|
+	opt[:port] = s }
+op.on('-a', '--addr ADDR', "listen address") {|s|
+	opt[:addr] = s }
+op.banner += ""
+
+op.parse!(ARGV)
+
+
+config = {
+	:timer_interval => 1.0,
+	:timeout_linit  => 3,
+}
+
+core = CLX::Core.new(opt[:addr], opt[:port], config)
+core.scan_module("#{CLX::MOD_DIR}/manager/*.rb")
+core.run
+
