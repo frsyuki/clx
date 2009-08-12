@@ -11,12 +11,12 @@ end
 
 self_addr = Address.new(self_ip, CONFIG[:port])
 
-core_timer(0.1) do
+core_timer(CONFIG[:keepalive_interval]) do
 	begin
-		sock = MessagePack::RPC::Client.new(mgr_host, mgr_port)
-		sock.timeout = 1.0
-		sock.call(:keepalive, self_addr, MOD.info['host'])
-		sock.close
+		c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+		c.timeout = 1.0
+		c.call(:keepalive, self_addr, MOD.info['host'])
+		c.close
 	rescue
 		p $!
 	end

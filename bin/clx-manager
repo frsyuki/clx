@@ -12,8 +12,9 @@ require 'optparse'
 opt = {
 	:port => CLX::MANAGER_DEFAULT_PORT,
 	:addr => '<any>',
-	:timer_interval => 1.0,
+	:timer_interval => 2.0,
 	:timeout_limit  => 3,
+	:more_load => nil,
 }
 
 op = OptionParser.new
@@ -29,6 +30,9 @@ op.on('-i', "--interval SEC=#{opt[:timer_interval]}",
 
 op.on('-t', "--limit LIMIT=#{opt[:timeout_limit]}",
 			"timeout limit count", Integer) {|i| opt[:timeout_limit] = i }
+
+op.on('-e', "--more-load DIR",
+			"load modules") {|s| opt[:more_load] = s }
 
 op.banner += " <config-store.yaml>"
 
@@ -50,5 +54,6 @@ config = {
 
 core = CLX::Core.new(opt[:addr], opt[:port], config)
 core.scan_module("#{CLX::MOD_DIR}/manager/*.rb")
+core.scan_module("#{opt[:more_load]}/*.rb") if opt[:more_load]
 core.run
 

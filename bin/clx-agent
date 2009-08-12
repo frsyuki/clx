@@ -7,53 +7,68 @@ end
 require 'clx/default'
 require 'clx/core'
 require 'clx/addr'
+require 'optparse'
 
-def usage
-	puts "Usage: #{File.basename($0)} <clx-agent.conf>"
+opt = {
+	:keepalive_interval => 1.0,
+	:more_load => nil,
+}
+
+
+op = OptionParser.new
+
+op.on('-i', "--interval SEC=#{opt[:keepalive_interval]}",
+			"keepalive interval", Numeric) {|n| opt[:keepalive_interval] = n }
+
+op.on('-e', "--more-load DIR",
+			"load modules") {|s| opt[:more_load] = s }
+
+op.banner += " <clx-agent.conf>"
+
+op.parse!(ARGV)
+
+if ARGV.length != 1
+	puts op.to_s
 	exit 1
 end
 
-if ARGV.length != 1
-	usage
-end
-
-conf = ARGV.shift
+conf_path = ARGV.shift
 
 
 class AgentConfig
 class << self
 	def manager(addr)
-		opt[:manager] = addr
+		conf[:manager] = addr
 	end
 
 	def load_path(path)
-		opt[:load_path] = path
+		conf[:load_path] = path
 	end
 
 	def var_dir(path)
-		opt[:var_dir] = path
+		conf[:var_dir] = path
 	end
 
 	def info
-		opt[:info]
+		conf[:info]
 	end
 
 	def listen(addr_port)
 		if addr_port.to_s.to_i.to_s == addr_port.to_s
-			opt[:listen] = "<any>:#{addr_port}"
+			conf[:listen] = "<any>:#{addr_port}"
 		else
-			opt[:listen] = addr_port
+			conf[:listen] = addr_port
 		end
 	end
 
 	private
-	def opt
-		const_get(:OPT)
+	def conf
+		const_get(:CONF)
 	end
 end
 end
 
-opt = {
+conf = {
 	:manager => nil,
 	:load_path => nil,
 	:var_dir => nil,
@@ -62,32 +77,34 @@ opt = {
 }
 
 Class.new(AgentConfig) do
-	const_set(:OPT, opt)
-end.module_eval(File.read(conf), conf)
+	const_set(:CONF, conf)
+end.module_eval(File.read(conf_path), conf_path)
 
-if !opt[:manager] || !opt[:load_path] || !opt[:var_dir]
+if !conf[:manager] || !conf[:load_path] || !conf[:var_dir]
 	usage
 end
 
-self_host, self_port = opt[:listen].to_s.split(':',2)
+self_host, self_port = conf[:listen].to_s.split(':',2)
 self_port ||= CLX::AGENT_DEFAULT_PORT
 
-mgr_host, mgr_port = opt[:manager].to_s.split(':',2)
+mgr_host, mgr_port = conf[:manager].to_s.split(':',2)
 mgr_port ||= CLX::MANAGER_DEFAULT_PORT
 
-load_glob = "#{opt[:load_path]}/*.rb"
+load_glob = "#{conf[:load_path]}/*.rb"
 
 
 config = {
+	:keepalive_interval => opt[:keepalive_interval],
 	:port => self_port,
 	:mgr_addr  => Address.new(mgr_host, mgr_port),
-	:var_dir => opt[:var_dir],
-	:info   => opt[:info],
+	:var_dir => conf[:var_dir],
+	:info   => conf[:info],
 }
 
 core = CLX::Core.new(self_host, self_port, config)
 core.scan_module("#{CLX::MOD_DIR}/agent/*.rb")
 core.scan_module(load_glob)
+core.scan_module("#{opt[:more_load]}/*.rb") if opt[:more_load]
 
 while true
 	begin
