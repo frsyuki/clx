@@ -67,6 +67,11 @@ class Service
 	end
 
 	def start
+		begin
+			return status['pid']
+		rescue
+		end
+
 		@before.each {|block| block.call }
 
 		rpipe, wpipe = IO.pipe
@@ -79,6 +84,16 @@ class Service
 				wpipe.write [Process.pid].pack('N')
 				rpipe.close
 				wpipe.close
+				ex = 0
+				3.upto(200) {|fd|
+					begin
+						# FIXME 本当は FD_CLOEXEC を付けておくべき
+						IO.new(fd).close
+					rescue Exception
+						ex += 1
+						break if ex > 5
+					end
+				}
 				Dir.chroot(@chroot) if @chroot
 				Dir.chdir(@chdir) if @chdir
 				File.umask(@umask) if @umask
@@ -115,7 +130,7 @@ class Service
 	def status
 		pid = get_pid
 		Process.getpgid(pid)
-		{"pid" => pid}
+		{'pid' => pid}
 	end
 
 	def group_change(match)
@@ -170,6 +185,7 @@ end
 
 m = ModService.new
 core_method :service, m
+core_method :svc, m
 
 core_def :service do |name, &mod|
 	svc = Service.new(name, &mod)
