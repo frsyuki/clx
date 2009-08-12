@@ -94,6 +94,9 @@ class Service
 						break if ex > 5
 					end
 				}
+				STDIN.reopen '/dev/null', 'r'
+				STDOUT.reopen '/dev/null', 'a'
+				STDERR.reopen '/dev/null', 'a'
 				Dir.chroot(@chroot) if @chroot
 				Dir.chdir(@chdir) if @chdir
 				File.umask(@umask) if @umask
