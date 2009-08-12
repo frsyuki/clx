@@ -22,8 +22,12 @@ class Core
 
 	def scan_module(glob)
 		Dir.glob(glob).sort.each do |file|
-			@modspace.module_eval(File.read(file), file)
+			load_module(File.read(file), file)
 		end
+	end
+
+	def load_module(str, fname = "(mod)")
+		@modspace.module_eval(str, fname)
 	end
 
 	def run

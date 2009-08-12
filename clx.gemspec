@@ -10,5 +10,5 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.executables << "clx" << "clx-agent" << "clx-manager"
   #s.add_dependency "msgpack", ">= 0.3.1"
-  s.files = ["bin/**/*", "lib/**/*", "example/**/*"].map {|g| Dir.glob(g) }.flatten
+  s.files = ["bin/**/*", "lib/**/*", "mod/**/*"].map {|g| Dir.glob(g) }.flatten
 end

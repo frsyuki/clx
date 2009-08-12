@@ -7,60 +7,82 @@ end
 require 'clx/default'
 require 'clx/core'
 require 'clx/addr'
-require 'optparse'
+
+def usage
+	puts "Usage: #{File.basename($0)} <clx-agent.conf>"
+	exit 1
+end
+
+if ARGV.length != 1
+	usage
+end
+
+conf = ARGV.shift
+
+
+class AgentConfig
+class << self
+	def manager(addr)
+		opt[:manager] = addr
+	end
+
+	def load_path(path)
+		opt[:load_path] = path
+	end
+
+	def var_dir(path)
+		opt[:var_dir] = path
+	end
+
+	def info
+		opt[:info]
+	end
+
+	def listen(num)
+		opt[:listen] = num
+	end
+
+	private
+	def opt
+		const_get(:OPT)
+	end
+end
+end
 
 opt = {
-	:vardir => "./var",
+	:manager => nil,
+	:load_path => nil,
+	:var_dir => nil,
+	:listen => "<any>:#{CLX::AGENT_DEFAULT_PORT}",
+	:info => {},
 }
 
-op = OptionParser.new
-op.on('-r', '--dir DIR', "output directory") {|s|
-	opt[:vardir] = s }
-op.banner += " <module dir> [key=value ...] <self address> <manager address>"
+Class.new(AgentConfig) do
+	const_set(:OPT, opt)
+end.module_eval(File.read(conf), conf)
 
-op.parse!(ARGV)
-
-module_dir = ARGV.shift
-unless module_dir
-	puts op.to_s
-	exit 1
+if !opt[:manager] || !opt[:load_path] || !opt[:var_dir]
+	usage
 end
 
-info = {}
-info_i = 0
-ARGV.each {|arg|
-	key, match = arg.split("=",2)
-	break unless match
-	info[key] = match
-	info_i += 1
-}
-ARGV.slice!(0,info_i)
-
-self_addr = ARGV.shift
-manager_addr = ARGV.shift
-
-if !manager_addr
-	puts op.to_s
-	exit 1
-end
-
-
-self_host, self_port = self_addr.split(":",2)
+self_host, self_port = opt[:listen].to_s.split(':',2)
 self_port ||= CLX::AGENT_DEFAULT_PORT
 
-manager_host, manager_port = manager_addr.split(":",2)
-manager_port ||= CLX::MANAGER_DEFAULT_PORT
+mgr_host, mgr_port = opt[:manager].to_s.split(':',2)
+mgr_port ||= CLX::MANAGER_DEFAULT_PORT
+
+load_glob = "#{opt[:load_path]}/*.rb"
 
 
 config = {
-	:self_addr => Address.new(self_host, self_port),
-	:mgr_addr  => Address.new(manager_host, manager_port),
-	:vardir => opt[:vardir],
-	:info   => info,
+	:port => self_port,
+	:mgr_addr  => Address.new(mgr_host, mgr_port),
+	:var_dir => opt[:var_dir],
+	:info   => opt[:info],
 }
 
-core = CLX::Core.new("<any>", self_port, config)
+core = CLX::Core.new(self_host, self_port, config)
 core.scan_module("#{CLX::MOD_DIR}/agent/*.rb")
-core.scan_module("#{module_dir}/*.rb")
+core.scan_module(load_glob)
 core.run
 

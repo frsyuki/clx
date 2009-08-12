@@ -11,22 +11,41 @@ require 'optparse'
 
 opt = {
 	:port => CLX::MANAGER_DEFAULT_PORT,
-	:addr => "<any>",
+	:addr => '<any>',
+	:timer_interval => 1.0,
+	:timeout_limit  => 3,
 }
 
 op = OptionParser.new
-op.on('-p', '--port PORT', "listen port", Integer) {|i|
-	opt[:port] = s }
-op.on('-a', '--addr ADDR', "listen address") {|s|
-	opt[:addr] = s }
-op.banner += ""
+
+op.on('-p', "--port PORT=#{opt[:port]}",
+			"listen port", Integer) {|i| opt[:port] = i }
+
+op.on('-a', "--addr ADDR=#{opt[:addr]}",
+			"listen address") {|s| opt[:addr] = s }
+
+op.on('-i', "--interval SEC=#{opt[:timer_interval]}",
+			"timer interval", Numeric) {|n| opt[:timer_interval] = n }
+
+op.on('-t', "--limit LIMIT=#{opt[:timeout_limit]}",
+			"timeout limit count", Integer) {|i| opt[:timeout_limit] = i }
+
+op.banner += " <config-store.yaml>"
 
 op.parse!(ARGV)
 
+if ARGV.length != 1
+	puts op.to_s
+	exit 1
+end
+
+store = ARGV.shift
+
 
 config = {
-	:timer_interval => 1.0,
-	:timeout_linit  => 3,
+	:timer_interval => opt[:timer_interval],
+	:timeout_limit  => opt[:timeout_limit],
+	:store => store,
 }
 
 core = CLX::Core.new(opt[:addr], opt[:port], config)

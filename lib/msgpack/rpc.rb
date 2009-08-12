@@ -2,6 +2,8 @@ require 'msgpack'
 require 'rev'
 
 # FIXME timeout
+require 'timeout'
+
 module MessagePack
 module RPC
 
@@ -109,6 +111,7 @@ class ClientSession
 			@error  = nil
 			@result = nil
 			@session = session
+			@timeout = session.timeout
 			@loop = loop
 		end
 		attr_reader :result, :error, :loop
@@ -120,16 +123,19 @@ class ClientSession
 		end
 
 		def join
-			time = @session.timeout
-			if time > 0
-				require 'timeout'
-				begin
-					timeout(time) { join_real }
-				rescue TimeoutError
-					raise "timeout"  # FIXME
+			if @session
+				time = @session.timeout
+				if time > 0
+					begin
+						Timeout.timeout(time) {
+							join_real
+						}
+					rescue TimeoutError
+						raise "timeout"  # FIXME
+					end
+				else
+					join_real
 				end
-			else
-				join_real
 			end
 			self
 		end

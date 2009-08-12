@@ -1,19 +1,22 @@
 
 service :nc do
 	cmd *%w[nc -l 6123]
+
 	before do
-		puts "before nc start: #{self.inspect}"
+		puts "start nc service"
 	end
+
 	after do
-		puts "after nc start: #{self.inspect}"
 	end
 
 	on "+gnc" do
 		puts "nc group added"
+		start
 	end
 
 	on "-gnc" do
 		puts "nc group removed"
+		stop
 	end
 end
 

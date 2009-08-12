@@ -2,7 +2,7 @@
 class Service
 	def initialize(name, &block)
 		@name = name
-		@pidfile = (CONFIG[:vardir]||"/tmp")+"/#{name}.pid"
+		@pidfile = (CONFIG[:var_dir]||"/var/tmp")+"/#{name}.pid"
 		@cmd = nil
 		@user = nil
 		@group = nil

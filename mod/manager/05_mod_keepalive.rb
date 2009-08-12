@@ -1,28 +1,31 @@
 
 class ModKeepalive
 	class Entry
-		def initialize(addr_raw)
-			@addr = Address.load(addr_raw)
-			@timeout = 0
+		attr_accessor :timeout, :hostname
+		def to_msgpack(out = '')
+			hostname.to_msgpack(out)
 		end
-		attr_accessor :timeout
 	end
-
 
 	def initialize
 		@agents = {}
 	end
 
-	def keepalive(addr_raw)
-		@agents[addr_raw] = Entry.new(addr_raw)
+	def keepalive(addr_raw, hostname)
+		entry = @agents[addr_raw]
+		unless entry
+			entry = @agents[addr_raw] = Entry.new
+		end
+		entry.timeout = 0
+		entry.hostname = hostname
 		nil
 	end
 
 	def timeout_timer
 		dead = []
-		@agents.each do |addr_raw, agent|
-			agent.timeout += 1
-			if agent.timeout > CONFIG[:timeout_linit]
+		@agents.each do |addr_raw, entry|
+			entry.timeout += 1
+			if entry.timeout > CONFIG[:timeout_limit]
 				dead << addr_raw
 			end
 		end
@@ -36,7 +39,7 @@ class ModKeepalive
 	end
 
 	def agents
-		@agents.keys
+		@agents
 	end
 end
 
