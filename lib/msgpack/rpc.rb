@@ -8,7 +8,6 @@ module MessagePack
 module RPC
 
 
-
 class Responder
 	def initialize(socket, msgid)
 		@socket = socket

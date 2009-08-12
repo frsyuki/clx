@@ -88,5 +88,15 @@ config = {
 core = CLX::Core.new(self_host, self_port, config)
 core.scan_module("#{CLX::MOD_DIR}/agent/*.rb")
 core.scan_module(load_glob)
-core.run
+
+while true
+	begin
+		core.run
+	rescue
+		$stderr.puts $!.to_s
+		$!.backtrace.each do |line|
+			$stderr.puts "  #{line}"
+		end
+	end
+end
 

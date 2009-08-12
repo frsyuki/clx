@@ -27,7 +27,14 @@ class Core
 	end
 
 	def load_module(str, fname = "(mod)")
-		@modspace.module_eval(str, fname)
+		begin
+			@modspace.module_eval(str, fname)
+		rescue
+			$stderr.puts $!.to_s
+			$!.backtrace.each do |line|
+				$stderr.puts "  #{line}"
+			end
+		end
 	end
 
 	def run

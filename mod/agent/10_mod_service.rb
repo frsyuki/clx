@@ -32,6 +32,11 @@ class Service
 		@chdir = dir
 	end
 
+	def chroot(dir)
+		@chdir ||= "/"
+		@chroot = dir
+	end
+
 	def umask(mask)
 		@umask = mask
 	end
@@ -74,6 +79,7 @@ class Service
 				wpipe.write [Process.pid].pack('N')
 				rpipe.close
 				wpipe.close
+				Dir.chroot(@chroot) if @chroot
 				Dir.chdir(@chdir) if @chdir
 				File.umask(@umask) if @umask
 				Process::Sys.setresuid @user if @user
@@ -101,6 +107,7 @@ class Service
 	def kill(sig = "TERM")
 		pid = get_pid
 		Process.kill(sig, pid)
+		true
 	end
 
 	alias stop kill
