@@ -8,6 +8,8 @@ require 'msgpack/rpc'
 require 'clx/default'
 require 'clx/addr'
 
+TIMEOUT = 5.0
+
 dot_clx = ENV['CLX_INFO'] || ENV['HOME']+"/.clx"
 
 
@@ -62,6 +64,7 @@ File.open(dot_clx) {|f|
 
 
 c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+c.timeout = TIMEOUT
 agents = c.call(:agents)
 c.close
 
@@ -72,6 +75,7 @@ lo = MessagePack::RPC::Loop.new
 agents = agents.map do |addr, hostname|
 	host, port = Address.parse(addr)
 	client = MessagePack::RPC::Client.new(host, port, lo)
+	client.timeout = TIMEOUT
 
 	reqs = matches.map {|key, match|
 		req = client.send(:get, key)
