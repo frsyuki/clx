@@ -38,8 +38,12 @@ class << self
 		opt[:info]
 	end
 
-	def listen(num)
-		opt[:listen] = num
+	def listen(addr_port)
+		if addr_port.to_s.to_i.to_s == addr_port.to_s
+			opt[:listen] = "<any>:#{addr_port}"
+		else
+			opt[:listen] = addr_port
+		end
 	end
 
 	private
