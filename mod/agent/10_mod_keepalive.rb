@@ -4,12 +4,12 @@ mgr_host, mgr_port = *mgr_addr.unpack
 
 s = TCPSocket.open(mgr_host, mgr_port)
 begin
-	_, _, self_hostname, self_host = s.addr
+	_, _, self_hostname, self_ip = s.addr
 ensure
 	s.close
 end
 
-self_addr = Address.new(self_host, CONFIG[:port])
+self_addr = Address.new(self_ip, CONFIG[:port])
 
 core_timer(0.1) do
 	begin
@@ -21,4 +21,6 @@ core_timer(0.1) do
 		p $!
 	end
 end
+
+info['ip'] = self_ip
 
