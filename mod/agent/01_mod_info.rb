@@ -6,14 +6,20 @@ class ModInfo
 			@info.merge!(info)
 		end
 	end
+	attr_reader :info
 
-	def info(key = nil)
-		return @info unless key
-		return @info[key]
+	def set(key, value)
+		@info[key] = value
+		value
+	end
+
+	def get(key)
+		@info[key]
 	end
 end
 
 m = ModInfo.new
-core_method :info,  &m.method(:info)
+core_method :get,  &m.method(:get)
+core_method :set,  &m.method(:set)
 core_def :info, &m.method(:info)
 

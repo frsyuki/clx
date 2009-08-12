@@ -74,7 +74,7 @@ agents = agents.map do |addr, hostname|
 	client = MessagePack::RPC::Client.new(host, port, lo)
 
 	reqs = matches.map {|key, match|
-		req = client.send(:info, key)
+		req = client.send(:get, key)
 		[ req, match ]
 	}
 
@@ -91,12 +91,42 @@ agents.map! do |client, hostname, reqs|
 end
 
 
-def expand_matches(match)
-	# FIXME
-	[match]
+def check_match_num_range(str, exp)
+	m = /(.*?)\[\[([0-9\-\,]+)\]\](.*)/.match(exp)
+	unless m
+		return str == exp
+	end
+
+	prefix  = m[1]
+	filelds = m[2].split(',')
+	suffix  = m[3]
+
+	ok = false
+	filelds.each do |f|
+		m = /([0-9]+)(?:\-([0-9]+))/.match(f)
+		if m[2]  # x-y
+			from  = m[1].to_i
+			to    = m[2].to_i
+			zeros = m[2].scan(/\A0+/)[0]
+		else  # y
+			from  = f.to_i
+			to    = f.to_i
+			zeros = f.scan(/\A0+/)[0]
+		end
+
+		(from..to).each {|i|
+			if "#{prefix}#{zeros}#{i}#{suffix}" == str
+				ok = true
+				break
+			end
+		}
+		break if ok
+	end
+
+	return ok
 end
 
-def check_match(result, matches)
+def check_match(result, exp)
 	case result
 	when NilClass
 		return false
@@ -104,7 +134,7 @@ def check_match(result, matches)
 	when Array
 		ok = false
 		result.each {|r|
-			if check_match(r, matches)
+			if check_match(r, exp)
 				ok = true
 			else
 				ok = false
@@ -114,7 +144,7 @@ def check_match(result, matches)
 		return ok
 
 	when String
-		return matches.include?(result)
+		return check_match_num_range(result, exp)
 
 	else
 		return false
@@ -124,8 +154,7 @@ end
 agents.reject! do |client, hostname, values|
 	remove = false
 	values.each {|result, match|
-		matches = expand_matches(match)
-		unless check_match(result, matches)
+		unless check_match(result, match)
 			remove = true
 			break
 		end
