@@ -216,9 +216,9 @@ def check_match(result, exp)
 		result.each {|r|
 			if check_match(r, exp)
 				ok = true
+				break
 			else
 				ok = false
-				break
 			end
 		}
 		return ok
