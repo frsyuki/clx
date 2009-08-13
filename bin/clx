@@ -9,8 +9,53 @@ require 'clx/default'
 require 'clx/addr'
 
 TIMEOUT = 5.0
+DOT_CLX = ENV['CLX_INFO'] || ENV['HOME']+"/.clx"
 
-dot_clx = ENV['CLX_INFO'] || ENV['HOME']+"/.clx"
+
+def connect_manager
+	begin
+		mgr_host = nil
+		mgr_port = nil
+		conf_name = nil
+		File.open(DOT_CLX) {|f|
+			mgr_host = f.gets.strip
+			mgr_port = f.gets.to_i
+			conf_name = f.gets.strip
+		}
+	rescue
+		puts "#{DOT_CLX} does not exist. run `#{$0} config <manager[:port]>` first."
+		exit 1
+	end
+
+	c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+	c.timeout = TIMEOUT
+	c
+end
+
+	
+def write_dot_clx(mgr_addr, conf_name)
+	mgr_host, mgr_port = mgr_addr.strip.split(':',2)
+	mgr_port ||= CLX::MANAGER_DEFAULT_PORT
+	
+	File.open(DOT_CLX, "w") {|f|
+		f.puts(mgr_host)
+		f.puts(mgr_port)
+		f.puts(conf_name.strip)
+	}
+
+	puts "saved #{DOT_CLX}"
+end
+
+
+def show_result(req)
+	if req.error
+		puts req.error.to_s
+	elsif req.result.is_a?(String)
+		puts req.result
+	else
+		puts req.result.inspect
+	end
+end
 
 
 matches = []
@@ -34,37 +79,63 @@ if ARGV[0] == "config"
 	ARGV.shift
 	mgr = ARGV.shift
 	conf_name = ARGV.shift || "default"
+	conf_name = ARGV.shift || "default"
 	if !mgr || !ARGV.empty?
 		puts "Usage #{File.basename($0)} config <manager[:port]> [config-name=default]"
 		exit 1
 	end
 
-	mgr_host, mgr_port = mgr.strip.split(':',2)
-	mgr_port ||= CLX::MANAGER_DEFAULT_PORT
+	write_dot_clx(mgr, conf_name)
 
-	File.open(dot_clx, "w") {|f|
-		f.puts(mgr_host)
-		f.puts(mgr_port)
-		f.puts(conf_name.strip)
-	}
-	puts "saved #{dot_clx}"
+=begin
+	usage = <<USAGE
+Usage #{File.basename($0)} config -m <manager[:port]> [config-name=default]"
+      #{File.basename($0)} config key value"
+      #{File.basename($0)} config key"
+USAGE
+
+
+	if ARGV[0] == "-h" || ARGV[0] == "--help"
+		puts usage
+		exit 1
+	end
+
+	if ARGV[0] == "-m" || ARGV[0] == "--manager"
+		ARGV.shift
+
+		mgr = ARGV.shift
+		conf_name = ARGV.shift || "default"
+		if !mgr || !ARGV.empty?
+			puts usage
+			exit 1
+		end
+
+		write_dot_clx(mgr, conf_name)
+		exit 0
+	end
+
+	case ARGV.length
+	when 1
+		c = connect_manager
+		req = c.send(:getconfig, ARGV[0]).join
+		show_result(req)
+
+	when 2
+		c = connect_manager
+		req = c.send(:setconfig, ARGV[0], ARGV[1]).join
+		show_result(req)
+
+	else
+		puts usage
+		exit 1
+	end
+=end
 
 	exit 0
 end
 
 
-mgr_host = nil
-mgr_port = nil
-conf_name = nil
-File.open(dot_clx) {|f|
-	mgr_host = f.gets.strip
-	mgr_port = f.gets.to_i
-	conf_name = f.gets.strip
-}
-
-
-c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
-c.timeout = TIMEOUT
+c = connect_manager
 agents = c.call(:agents)
 c.close
 
@@ -191,13 +262,7 @@ end
 agents.each do |client, hostname, req|
 	req.join
 	puts "#{hostname}:\t#{client.host}:#{client.port}"
-	if req.error
-		puts "    #{req.error}"
-	elsif req.result.is_a?(String)
-		puts "   #{req.result}"
-	else
-		puts "   #{req.result.inspect}"
-	end
+	print "   ";  show_result(req)
 	puts ""
 end
 
