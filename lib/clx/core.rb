@@ -55,6 +55,8 @@ class Core
 		@methods[name.to_sym] = block
 	end
 
+	attr_reader :methods
+
 
 	class Mod
 	class << self

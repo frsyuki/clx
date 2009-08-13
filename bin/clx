@@ -239,10 +239,7 @@ end
 
 
 if ARGV.empty?
-	agents.each do |client, hostname, req|
-		puts "#{hostname}\t#{client.host}:#{client.port}"
-	end
-	exit 0
+	ARGV.push("help")
 end
 
 

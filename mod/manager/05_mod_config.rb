@@ -20,6 +20,6 @@ class ModConfig
 end
 
 m = ModConfig.new
-core_method :getconfig,  &m.method(:getconfig)
-core_method :setconfig,  &m.method(:setconfig)
+core_method :getconfig, m.method(:getconfig)
+core_method :setconfig, m.method(:setconfig)
 

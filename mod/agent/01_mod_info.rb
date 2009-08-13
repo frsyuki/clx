@@ -19,7 +19,7 @@ class ModInfo
 end
 
 m = ModInfo.new
-core_method :get,  &m.method(:get)
-core_method :set,  &m.method(:set)
-core_def :info, &m.method(:info)
+core_method :get, m.method(:get)
+core_method :set, m.method(:set)
+core_def :info, m.method(:info)
 
