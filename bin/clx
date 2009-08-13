@@ -94,7 +94,6 @@ Usage #{File.basename($0)} config -m <manager[:port]> [config-name=default]"
       #{File.basename($0)} config key"
 USAGE
 
-
 	if ARGV[0] == "-h" || ARGV[0] == "--help"
 		puts usage
 		exit 1
@@ -178,19 +177,25 @@ def check_match_num_range(str, exp)
 
 	ok = false
 	filelds.each do |f|
-		m = /([0-9]+)(?:\-([0-9]+))/.match(f)
+		m = /([0-9]+)(?:\-([0-9]+))?/.match(f)
 		if m[2]  # x-y
-			from  = m[1].to_i
-			to    = m[2].to_i
-			zeros = m[2].scan(/\A0+/)[0]
+			from  = m[1]
+			to    = m[2]
 		else  # y
-			from  = f.to_i
-			to    = f.to_i
-			zeros = f.scan(/\A0+/)[0]
+			from  = f
+			to    = f
+		end
+		from_i = from.to_i
+		to_i   = to.to_i
+
+		if from.length == to.length && from[0] == ?0
+			format = "%0#{from.length}d"
+		else
+			format = "%s"
 		end
 
-		(from..to).each {|i|
-			if "#{prefix}#{zeros}#{i}#{suffix}" == str
+		(from_i..to_i).each {|i|
+			if "#{prefix}#{format % i}#{suffix}" == str
 				ok = true
 				break
 			end
@@ -238,11 +243,6 @@ agents.reject! do |client, hostname, values|
 end
 
 
-if ARGV.empty?
-	ARGV.push("help")
-end
-
-
 argv = ARGV.map {|a|
 	if a == '-'
 		STDIN.read
@@ -250,6 +250,10 @@ argv = ARGV.map {|a|
 		a
 	end
 }
+
+if argv.empty?
+	argv = ["help"]
+end
 
 agents.map! do |client, hostname, _|
 	req = client.send(*argv)
