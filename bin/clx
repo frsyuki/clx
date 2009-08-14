@@ -252,7 +252,10 @@ argv = ARGV.map {|a|
 }
 
 if argv.empty?
-	argv = ["help"]
+	agents.each do |client, hostname, _|
+		puts "#{hostname}:\t#{client.host}:#{client.port}"
+	end
+	exit
 end
 
 
