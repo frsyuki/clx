@@ -7,43 +7,53 @@ end
 require 'msgpack/rpc'
 require 'clx/default'
 require 'clx/addr'
+require 'yaml'
 
 TIMEOUT = 5.0
 DOT_CLX = ENV['CLX_INFO'] || ENV['HOME']+"/.clx"
 
 
+def read_conf
+	YAML.load File.read(DOT_CLX)
+rescue
+	puts "'#{DOT_CLX}' file does not exist."
+	puts "run `#{$0} config -m <address[:port]>` first."
+	exit 1
+end
+
+def write_conf(conf)
+	yaml = YAML.dump(conf)
+	File.open(DOT_CLX, "w") {|f|
+		f.write yaml
+	}
+	puts "saved '#{DOT_CLX}':"
+end
+
+
 def connect_manager
-	begin
-		mgr_host = nil
-		mgr_port = nil
-		conf_name = nil
-		File.open(DOT_CLX) {|f|
-			mgr_host = f.gets.strip
-			mgr_port = f.gets.to_i
-			conf_name = f.gets.strip
-		}
-	rescue
-		puts "#{DOT_CLX} does not exist. run `#{$0} config <manager[:port]>` first."
-		exit 1
-	end
+	conf = read_conf
+
+	mgr = conf['manager']
+	mgr_host, mgr_port = mgr.split(':',2)
+	mgr_port ||= CLX::MANAGER_DEFAULT_PORT
 
 	c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
 	c.timeout = TIMEOUT
 	c
 end
 
-	
-def write_dot_clx(mgr_addr, conf_name)
-	mgr_host, mgr_port = mgr_addr.strip.split(':',2)
-	mgr_port ||= CLX::MANAGER_DEFAULT_PORT
-	
-	File.open(DOT_CLX, "w") {|f|
-		f.puts(mgr_host)
-		f.puts(mgr_port)
-		f.puts(conf_name.strip)
-	}
 
-	puts "saved #{DOT_CLX}"
+def get_agents
+	begin
+		c = connect_manager
+		agents = c.call(:agents)
+		c.close
+	rescue StandardError, TimeoutError
+		puts "can't connect to the manager."
+		puts "error: #{$!}"
+		exit 1
+	end
+	agents
 end
 
 
@@ -77,22 +87,28 @@ end
 
 if ARGV[0] == "config"
 	ARGV.shift
-	mgr = ARGV.shift
-	conf_name = ARGV.shift || "default"
-	conf_name = ARGV.shift || "default"
-	if !mgr || !ARGV.empty?
-		puts "Usage #{File.basename($0)} config <manager[:port]> [config-name=default]"
+
+	opt = { }
+
+	require 'optparse'
+	op = OptionParser.new
+
+	op.on('-m', "--manager <address[:port]>",
+				"manager address") {|s| opt['manager'] = s }
+
+	op.parse!(ARGV)
+
+	if !ARGV.empty? || !opt['manager']
+		puts op.to_s
 		exit 1
 	end
 
-	write_dot_clx(mgr, conf_name)
+	write_conf(opt)
 	exit 0
 end
 
 
-c = connect_manager
-agents = c.call(:agents)
-c.close
+agents = get_agents
 
 
 lo = MessagePack::RPC::Loop.new
