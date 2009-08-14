@@ -86,50 +86,6 @@ if ARGV[0] == "config"
 	end
 
 	write_dot_clx(mgr, conf_name)
-
-=begin
-	usage = <<USAGE
-Usage #{File.basename($0)} config -m <manager[:port]> [config-name=default]"
-      #{File.basename($0)} config key value"
-      #{File.basename($0)} config key"
-USAGE
-
-	if ARGV[0] == "-h" || ARGV[0] == "--help"
-		puts usage
-		exit 1
-	end
-
-	if ARGV[0] == "-m" || ARGV[0] == "--manager"
-		ARGV.shift
-
-		mgr = ARGV.shift
-		conf_name = ARGV.shift || "default"
-		if !mgr || !ARGV.empty?
-			puts usage
-			exit 1
-		end
-
-		write_dot_clx(mgr, conf_name)
-		exit 0
-	end
-
-	case ARGV.length
-	when 1
-		c = connect_manager
-		req = c.send(:getconfig, ARGV[0]).join
-		show_result(req)
-
-	when 2
-		c = connect_manager
-		req = c.send(:setconfig, ARGV[0], ARGV[1]).join
-		show_result(req)
-
-	else
-		puts usage
-		exit 1
-	end
-=end
-
 	exit 0
 end
 
@@ -251,11 +207,13 @@ argv = ARGV.map {|a|
 	end
 }
 
+
 if argv.empty?
 	agents.each do |client, hostname, _|
 		puts "#{hostname}:\t#{client.host}:#{client.port}"
 	end
-	exit
+
+	exit 0
 end
 
 
@@ -286,17 +244,19 @@ if argv[0] == "do"
 		Process.waitpid(pid)
 	end
 
-else
-	agents.map! do |client, hostname, _|
-		req = client.send(*argv)
-		[client, hostname, req]
-	end
+	exit 0
+end
 
-	agents.each do |client, hostname, req|
-		req.join
-		puts "#{hostname}:\t#{client.host}:#{client.port}"
-		print "   ";  show_result(req)
-		puts ""
-	end
+
+agents.map! do |client, hostname, _|
+	req = client.send(*argv)
+	[client, hostname, req]
+end
+
+agents.each do |client, hostname, req|
+	req.join
+	puts "#{hostname}:\t#{client.host}:#{client.port}"
+	print "   ";  show_result(req)
+	puts ""
 end
 
