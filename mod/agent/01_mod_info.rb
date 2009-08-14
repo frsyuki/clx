@@ -16,10 +16,15 @@ class ModInfo
 	def get(key)
 		@info[key]
 	end
+
+	def getall
+		@info
+	end
 end
 
 m = ModInfo.new
 core_method :get, m.method(:get)
 core_method :set, m.method(:set)
+core_method :getall, m.method(:getall)
 core_def :info, m.method(:info)
 

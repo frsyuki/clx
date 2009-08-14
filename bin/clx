@@ -255,15 +255,36 @@ if argv.empty?
 	argv = ["help"]
 end
 
-agents.map! do |client, hostname, _|
-	req = client.send(*argv)
-	[client, hostname, req]
-end
 
-agents.each do |client, hostname, req|
-	req.join
-	puts "#{hostname}:\t#{client.host}:#{client.port}"
-	print "   ";  show_result(req)
-	puts ""
+if argv[0] == "do"
+	argv.shift
+
+	agents.map! do |client, hostname, _|
+		req = client.send('getall')
+		[client, hostname, req]
+	end
+
+	agents.each do |client, hostname, req|
+		req.join
+		if info = req.result
+			replaced = argv.map do |a|
+				a.gsub(/\[\[([^\]]*)\]\]/) {|m| info[$~[1]] }
+			end
+			system(*replaced)
+		end
+	end
+
+else
+	agents.map! do |client, hostname, _|
+		req = client.send(*argv)
+		[client, hostname, req]
+	end
+
+	agents.each do |client, hostname, req|
+		req.join
+		puts "#{hostname}:\t#{client.host}:#{client.port}"
+		print "   ";  show_result(req)
+		puts ""
+	end
 end
 
