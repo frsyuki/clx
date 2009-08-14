@@ -10,20 +10,19 @@ require 'clx/addr'
 require 'optparse'
 
 opt = {
-	:port => CLX::MANAGER_DEFAULT_PORT,
-	:addr => '<any>',
+	:listen => "<any>:#{CLX::MANAGER_DEFAULT_PORT}",
 	:timer_interval => 2.0,
 	:timeout_limit  => 3,
-	:more_load => nil,
+	:load_path => nil,
 }
 
 op = OptionParser.new
 
-op.on('-p', "--port PORT=#{opt[:port]}",
-			"listen port", Integer) {|i| opt[:port] = i }
+op.on('-f', "--config <clx-manager.conf>",
+			"load config from the file") {|s| opt[:config] = s }
 
-op.on('-a', "--addr ADDR=#{opt[:addr]}",
-			"listen address") {|s| opt[:addr] = s }
+op.on('-l', "--listen <[address:]port>",
+			"listen port") {|s| opt[:listen] = s }
 
 op.on('-i', "--interval SEC=#{opt[:timer_interval]}",
 			"timer interval", Numeric) {|n| opt[:timer_interval] = n }
@@ -31,8 +30,8 @@ op.on('-i', "--interval SEC=#{opt[:timer_interval]}",
 op.on('-t', "--limit LIMIT=#{opt[:timeout_limit]}",
 			"timeout limit count", Integer) {|i| opt[:timeout_limit] = i }
 
-op.on('-e', "--more-load DIR",
-			"load modules") {|s| opt[:more_load] = s }
+op.on('-s', "--load-path DIR",
+			"load modules") {|s| opt[:load_path] = s }
 
 op.banner += ""
 
@@ -44,13 +43,61 @@ if ARGV.length != 0
 end
 
 
+if file = opt[:config]
+	class ManagerConfig
+	class << self
+		def timer_interval(n)
+			conf[:timer_interval] = n.to_f
+		end
+
+		def timeout_limit(n)
+			conf[:timeout_limit] = n.to_i
+		end
+
+		def load_path(path)
+			conf[:load_path] = path
+		end
+
+		def listen(addr_port)
+			conf[:listen] = addr_port
+		end
+
+		private
+		def conf
+			const_get(:CONF)
+		end
+	end
+	end
+
+	conf = {}
+	Class.new(AgentConfig) do
+		const_set(:CONF, conf)
+	end.module_eval(File.read(file), file)
+
+	conf.each_pair {|key, value|
+		opt[key] ||= value
+	}
+end
+
+
+if opt[:listen].to_s.to_i.to_s == opt[:listen].to_s
+	opt[:listen] = "<any>:#{opt[:listen]}"
+end
+
+self_host, self_port = opt[:listen].to_s.split(':',2)
+self_port ||= CLX::AGENT_DEFAULT_PORT
+p opt
+
+
 config = {
 	:timer_interval => opt[:timer_interval],
 	:timeout_limit  => opt[:timeout_limit],
 }
 
-core = CLX::Core.new(opt[:addr], opt[:port], config)
+core = CLX::Core.new(self_host, self_port, config)
 core.scan_module("#{CLX::MOD_DIR}/manager/*.rb")
-core.scan_module("#{opt[:more_load]}/*.rb") if opt[:more_load]
+if opt[:load_path]
+	core.scan_module("#{opt[:load_path]}/*.rb") if opt[:load_path]
+end
 core.run
 

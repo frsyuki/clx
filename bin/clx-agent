@@ -10,101 +10,134 @@ require 'clx/addr'
 require 'optparse'
 
 opt = {
-	:keepalive_interval => 1.0,
-	:more_load => nil,
-}
-
-
-op = OptionParser.new
-
-op.on('-i', "--interval SEC=#{opt[:keepalive_interval]}",
-			"keepalive interval", Numeric) {|n| opt[:keepalive_interval] = n }
-
-op.on('-e', "--more-load DIR",
-			"load modules") {|s| opt[:more_load] = s }
-
-op.banner += " <clx-agent.conf>"
-
-op.parse!(ARGV)
-
-if ARGV.length != 1
-	puts op.to_s
-	exit 1
-end
-
-conf_path = ARGV.shift
-
-
-class AgentConfig
-class << self
-	def manager(addr)
-		conf[:manager] = addr
-	end
-
-	def load_path(path)
-		conf[:load_path] = path
-	end
-
-	def var_dir(path)
-		conf[:var_dir] = path
-	end
-
-	def info
-		conf[:info]
-	end
-
-	def listen(addr_port)
-		if addr_port.to_s.to_i.to_s == addr_port.to_s
-			conf[:listen] = "<any>:#{addr_port}"
-		else
-			conf[:listen] = addr_port
-		end
-	end
-
-	private
-	def conf
-		const_get(:CONF)
-	end
-end
-end
-
-conf = {
+	:config => nil,
 	:manager => nil,
+	:keepalive_interval => 1.0,
 	:load_path => nil,
 	:var_dir => nil,
 	:listen => "<any>:#{CLX::AGENT_DEFAULT_PORT}",
 	:info => {},
 }
 
-Class.new(AgentConfig) do
-	const_set(:CONF, conf)
-end.module_eval(File.read(conf_path), conf_path)
+op = OptionParser.new
 
-if !conf[:manager] || !conf[:load_path] || !conf[:var_dir]
-	usage
+op.on('-f', "--config <clx-agent.conf>",
+			"load config from the file") {|s| opt[:config] = s }
+
+op.on('-m', "--manager <address[:port]>",
+			"manager address") {|s| opt[:manager] = s }
+
+op.on('-s', "--load-path DIR",
+			"path to module directory") {|s| opt[:load_path] = s }
+
+op.on('-o', "--var DIR",
+			"pid directory") {|s| opt[:var_dir] = s }
+
+op.on('-l', "--listen <[address:]port>",
+			"listen port") {|s| opt[:listen] = s }
+
+op.on('-i', "--interval SEC=#{opt[:keepalive_interval]}",
+			"keepalive interval", Numeric) {|n| opt[:keepalive_interval] = n }
+
+op.banner += " [key=match ...]"
+
+
+matches = []
+matches_i = 0
+ARGV.each {|arg|
+	key, match = arg.split("=",2)
+	break unless match
+	matches.push [key, match]
+	matches_i += 1
+}
+ARGV.slice!(0,matches_i)
+
+
+op.parse!(ARGV)
+
+unless ARGV.empty?
+	puts op.to_s
+	exit 1
 end
 
-self_host, self_port = conf[:listen].to_s.split(':',2)
+
+if file = opt[:config]
+	class AgentConfig
+	class << self
+		def manager(addr)
+			conf[:manager] = addr
+		end
+
+		def keepalive_interval(n)
+			conf[:keepalive_interval] = n.to_f
+		end
+
+		def load_path(path)
+			conf[:load_path] = path
+		end
+
+		def var_dir(path)
+			conf[:var_dir] = path
+		end
+
+		def info
+			conf[:info] ||= {}
+		end
+
+		def listen(addr_port)
+			conf[:listen] = addr_port
+		end
+
+		private
+		def conf
+			const_get(:CONF)
+		end
+	end
+	end
+
+	conf = {}
+	Class.new(AgentConfig) do
+		const_set(:CONF, conf)
+	end.module_eval(File.read(file), file)
+
+	conf.each_pair {|key, value|
+		opt[key] ||= value
+	}
+end
+
+
+if !opt[:manager] || !opt[:load_path] || !opt[:var_dir]
+	puts op.to_s
+	puts "manager, load-path and var-dir are required"
+	exit 1
+end
+
+
+if opt[:listen].to_s.to_i.to_s == opt[:listen].to_s
+	opt[:listen] = "<any>:#{opt[:listen]}"
+end
+
+self_host, self_port = opt[:listen].to_s.split(':',2)
 self_port ||= CLX::AGENT_DEFAULT_PORT
 
-mgr_host, mgr_port = conf[:manager].to_s.split(':',2)
+
+mgr_host, mgr_port = opt[:manager].to_s.split(':',2)
 mgr_port ||= CLX::MANAGER_DEFAULT_PORT
 
-load_glob = "#{conf[:load_path]}/*.rb"
+load_glob = "#{opt[:load_path]}/*.rb"
 
 
 config = {
 	:keepalive_interval => opt[:keepalive_interval],
 	:port => self_port,
 	:mgr_addr  => Address.new(mgr_host, mgr_port),
-	:var_dir => conf[:var_dir],
-	:info   => conf[:info],
+	:var_dir => opt[:var_dir],
+	:info   => opt[:info],
 }
 
 core = CLX::Core.new(self_host, self_port, config)
 core.scan_module("#{CLX::MOD_DIR}/agent/*.rb")
 core.scan_module(load_glob)
-core.scan_module("#{opt[:more_load]}/*.rb") if opt[:more_load]
 
 while true
 	begin
