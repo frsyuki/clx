@@ -264,14 +264,23 @@ if argv[0] == "do"
 		[client, hostname, req]
 	end
 
-	agents.each do |client, hostname, req|
+	agents.map! do |client, hostname, req|
 		req.join
 		if info = req.result
 			replaced = argv.map do |a|
 				a.gsub(/\[\[([^\]]*)\]\]/) {|m| info[$~[1]] }
 			end
-			system(*replaced)
+			pid = fork
+			unless pid
+				exec *replaced
+				exit! 127
+			end
 		end
+		[ client, hostname, pid ]
+	end
+
+	agents.each do |client, hostname, pid|
+		Process.waitpid(pid)
 	end
 
 else
