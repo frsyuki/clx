@@ -34,22 +34,19 @@ op.on('-t', "--limit LIMIT=#{opt[:timeout_limit]}",
 op.on('-e', "--more-load DIR",
 			"load modules") {|s| opt[:more_load] = s }
 
-op.banner += " <config-store.yaml>"
+op.banner += ""
 
 op.parse!(ARGV)
 
-if ARGV.length != 1
+if ARGV.length != 0
 	puts op.to_s
 	exit 1
 end
-
-store = ARGV.shift
 
 
 config = {
 	:timer_interval => opt[:timer_interval],
 	:timeout_limit  => opt[:timeout_limit],
-	:store => store,
 }
 
 core = CLX::Core.new(opt[:addr], opt[:port], config)
