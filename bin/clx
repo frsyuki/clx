@@ -16,9 +16,7 @@ DOT_CLX = ENV['CLX_INFO'] || ENV['HOME']+"/.clx"
 def read_conf
 	YAML.load File.read(DOT_CLX)
 rescue
-	puts "'#{DOT_CLX}' file does not exist."
-	puts "run `#{$0} config -m <address[:port]>` first."
-	exit 1
+	nil
 end
 
 def write_conf(conf)
@@ -26,12 +24,17 @@ def write_conf(conf)
 	File.open(DOT_CLX, "w") {|f|
 		f.write yaml
 	}
-	puts "saved '#{DOT_CLX}':"
+	puts "saved '#{DOT_CLX}'"
 end
 
 
 def connect_manager
 	conf = read_conf
+	unless conf
+		puts "'#{DOT_CLX}' file does not exist."
+		puts "run `#{$0} config -m <address[:port]>` first."
+		exit 1
+	end
 
 	mgr = conf['manager']
 	mgr_host, mgr_port = mgr.split(':',2)
@@ -44,16 +47,39 @@ end
 
 
 def get_agents
-	begin
-		c = connect_manager
-		agents = c.call(:agents)
-		c.close
-	rescue StandardError, TimeoutError
-		puts "can't connect to the manager."
-		puts "error: #{$!}"
-		exit 1
+	list = []
+
+	conf = read_conf || {}
+	if manager = conf['manager']
+		mgr_host, mgr_port = mgr.split(':',2)
+		mgr_port ||= CLX::MANAGER_DEFAULT_PORT
+
+		c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+		c.timeout = TIMEOUT
+		begin
+			result = c.call(:agents)
+		rescue StandardError, TimeoutError
+			puts "can't connect to the manager."
+			puts "error: #{$!}"
+			exit 1
+		ensure
+			c.close
+		end
+
+		result.each {|addr, hostname|
+			host, port = Address.parse(addr)
+			list.push [host, port, hostname]
+		}
+
+	elsif agents = conf['agents']
+		agents.each {|host_port, hostname|
+			host, port = host_port.split(':',2)
+			port ||= CLX::AGENT_DEFAULT_PORT
+			list.push [host, port, hostname]
+		}
 	end
-	agents
+
+	list
 end
 
 
@@ -85,25 +111,79 @@ if ARGV[0] == "-h" || ARGV[0] == "--help"
 end
 
 
-if ARGV[0] == "config"
+case ARGV[0]
+when "manager"
 	ARGV.shift
+	if ARGV.length != 1
+		puts "Usage: #{File.dirname($0)} <address[:port]>"
+		exit 1
+	end
 
-	opt = { }
+	write_conf({
+		'manager' => ARGV[0]
+	})
 
+	exit 0
+
+when "search"
+	ARGV.shift
 	require 'optparse'
-	op = OptionParser.new
+	require 'timeout'
+	opt = {
+		:timeout => 5,
+		:port => CLX::AGENT_DEFAULT_PORT,
+		:add => false,
+	}
 
-	op.on('-m', "--manager <address[:port]>",
-				"manager address") {|s| opt['manager'] = s }
+	op = OptionParser.new
+	op.on('-t', "--timeout SEC=#{opt[:timeout]}",
+				"timeout time", Numeric) {|n| opt[:timeout] = n }
+	op.on('-p', "--port PORT=#{opt[:port]}",
+				"port", Integer) {|i| opt[:port] = i }
+	op.on('-a', "--add",
+				"add agents instead of replacing") {|b| opt[:addr] = b }
 
 	op.parse!(ARGV)
-
-	if !ARGV.empty? || !opt['manager']
+	if ARGV.length != 0
 		puts op.to_s
 		exit 1
 	end
 
-	write_conf(opt)
+	if opt[:add]
+		conf = read_conf || {}
+		agents = conf['agents'] || {}
+	else
+		agents = {}
+	end
+
+	sock = UDPSocket.new
+	sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, 1)
+	sock.send("", 0, "<broadcast>", opt[:port])
+	begin
+		Timeout.timeout(opt[:timeout]) do
+			while true
+				begin
+					msg, addr = sock.recvfrom(2048)
+					addr, hostname = MessagePack.unpack(msg)
+					host, port = Address.parse(addr)
+					agents["#{host}:#{port}"] = hostname
+					puts "#{hostname}:\t#{host}:#{port}"
+				rescue
+				end
+			end
+		end
+	rescue TimeoutError
+	end
+
+	if agents.empty?
+		puts "no agents found"
+		exit 1
+	end
+
+	write_conf({
+		'agents' => agents
+	})
+
 	exit 0
 end
 
@@ -114,8 +194,7 @@ agents = get_agents
 lo = MessagePack::RPC::Loop.new
 
 ## check matches
-agents = agents.map do |addr, hostname|
-	host, port = Address.parse(addr)
+agents = agents.map do |host, port, hostname|
 	client = MessagePack::RPC::Client.new(host, port, lo)
 	client.timeout = TIMEOUT
 
@@ -129,7 +208,7 @@ end
 
 agents.map! do |client, hostname, reqs|
 	values = reqs.map {|req, match|
-		req.join
+		req.join rescue req.error = $!.to_s
 		result = req.result  # ignore req.error
 		[ result, match ]
 	}
@@ -242,7 +321,7 @@ if argv[0] == "do"
 	end
 
 	agents.map! do |client, hostname, req|
-		req.join
+		req.join rescue req.error = $!.to_s
 		if info = req.result
 			replaced = argv.map do |a|
 				a.gsub(/\[\[([^\]]*)\]\]/) {|m| info[$~[1]] }
@@ -270,7 +349,7 @@ agents.map! do |client, hostname, _|
 end
 
 agents.each do |client, hostname, req|
-	req.join
+	req.join rescue req.error = $!.to_s
 	puts "#{hostname}:\t#{client.host}:#{client.port}"
 	print "   ";  show_result(req)
 	puts ""

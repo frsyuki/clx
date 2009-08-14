@@ -113,7 +113,8 @@ class ClientSession
 			@timeout = session.timeout
 			@loop = loop
 		end
-		attr_reader :result, :error, :loop
+		attr_reader :loop
+		attr_accessor :result, :error
 
 		def call(err, res)
 			@error  = err

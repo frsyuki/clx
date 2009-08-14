@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   #s.platform = Gem::Platform::CURRENT
   s.name = "clx"
-  s.version = "0.0.1"
+  s.version = "0.0.2"
   s.summary = "clx"
   s.author = "FURUHASHI Sadayuki"
   s.email = "frsyuki@users.sourceforge.jp"

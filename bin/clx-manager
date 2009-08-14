@@ -84,17 +84,19 @@ if opt[:listen].to_s.to_i.to_s == opt[:listen].to_s
 	opt[:listen] = "<any>:#{opt[:listen]}"
 end
 
-self_host, self_port = opt[:listen].to_s.split(':',2)
-self_port ||= CLX::AGENT_DEFAULT_PORT
+listen_host, listen_port = opt[:listen].to_s.split(':',2)
+listen_port ||= CLX::AGENT_DEFAULT_PORT
 p opt
 
 
 config = {
+	:listen_host => listen_host,
+	:listen_port => listen_port,
 	:timer_interval => opt[:timer_interval],
 	:timeout_limit  => opt[:timeout_limit],
 }
 
-core = CLX::Core.new(self_host, self_port, config)
+core = CLX::Core.new(listen_host, listen_port, config)
 core.scan_module("#{CLX::MOD_DIR}/manager/*.rb")
 if opt[:load_path]
 	core.scan_module("#{opt[:load_path]}/*.rb") if opt[:load_path]

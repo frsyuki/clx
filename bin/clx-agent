@@ -106,9 +106,9 @@ if file = opt[:config]
 end
 
 
-if !opt[:manager] || !opt[:load_path] || !opt[:var_dir]
+if !opt[:load_path] || !opt[:var_dir]
 	puts op.to_s
-	puts "manager, load-path and var-dir are required"
+	puts "load-path and var-dir are required"
 	exit 1
 end
 
@@ -117,25 +117,24 @@ if opt[:listen].to_s.to_i.to_s == opt[:listen].to_s
 	opt[:listen] = "<any>:#{opt[:listen]}"
 end
 
-self_host, self_port = opt[:listen].to_s.split(':',2)
-self_port ||= CLX::AGENT_DEFAULT_PORT
+listen_host, listen_port = opt[:listen].to_s.split(':',2)
+listen_port ||= CLX::AGENT_DEFAULT_PORT
 
-
-mgr_host, mgr_port = opt[:manager].to_s.split(':',2)
-mgr_port ||= CLX::MANAGER_DEFAULT_PORT
 
 load_glob = "#{opt[:load_path]}/*.rb"
 
 
 config = {
+	:listen_host => listen_host,
+	:listen_port => listen_port,
 	:keepalive_interval => opt[:keepalive_interval],
-	:port => self_port,
-	:mgr_addr  => Address.new(mgr_host, mgr_port),
+	:port => listen_port,
+	:manager  => opt[:manager],
 	:var_dir => opt[:var_dir],
 	:info   => opt[:info],
 }
 
-core = CLX::Core.new(self_host, self_port, config)
+core = CLX::Core.new(listen_host, listen_port, config)
 core.scan_module("#{CLX::MOD_DIR}/agent/*.rb")
 core.scan_module(load_glob)
 
