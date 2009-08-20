@@ -2,7 +2,8 @@
 class ModGroup
 	def initialize
 		@groups = []
-		@on_group_change = []
+		@on_all = []
+		@on = []
 	end
 
 	def call(*args)
@@ -18,7 +19,7 @@ class ModGroup
 				procs << Proc.new do
 					unless @groups.include?(name)
 						@groups.push(name)
-						@on_group_change.each {|block| block.call(match) }
+						@on_all.each {|block| block.call(match) }
 					end
 				end
 
@@ -26,7 +27,7 @@ class ModGroup
 				procs << Proc.new do
 					if @groups.include?(name)
 						@groups.delete(name)
-						@on_group_change.each {|block| block.call(match) }
+						@on_all.each {|block| block.call(match) }
 					end
 				end
 
@@ -40,9 +41,26 @@ class ModGroup
 		@groups
 	end
 
-	def on_group_change(&block)
-		@on_group_change.push block
+	def on_all(&block)
+		@on_all.push(block)
 		MOD.info['group'] = @groups
+	end
+
+	def on(match, &block)
+		return unless block
+		if match[0] != ?+ && match[0] != ?-
+			raise "invalid argument #{match.dump}"
+		end
+		(@on[match] ||= []).push(block)
+	end
+
+	private
+	def do_on_all(match)
+		@on_all.each {|block| block.call(match) }
+	end
+
+	def do_on(match)
+		(@on[match] || []).each {|block| block.call }
 	end
 end
 
@@ -51,7 +69,6 @@ MOD.info['group'] = []
 m = ModGroup.new
 core_method :group, m
 
-core_def :on_group_change do |&block|
-	m.on_group_change(&block)
-end
+core_def :on_all, m.method(:on_all)
+core_def :on, m.method(:on)
 

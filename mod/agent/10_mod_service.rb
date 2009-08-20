@@ -179,7 +179,7 @@ class ModService
 		@svcs[name.to_sym] = svc
 	end
 
-	def on_group_change(match)
+	def on_all(match)
 		@svcs.each_pair {|name, svc|
 			svc.group_change(match)
 		}
@@ -195,7 +195,7 @@ core_def :service do |name, &mod|
 	m.add(name, svc)
 end
 
-on_group_change do |match|
-	m.on_group_change(match)
+on_all do |match|
+	m.on_all(match)
 end
 
