@@ -41,3 +41,11 @@ core_def    :serve, m.method(:serve)
 core_method :service, m.method(:serve)
 core_def    :service, m.method(:serve)
 
+core_def :start do |name|
+	m.serve(name, "start")
+end
+
+core_def :stop do |name|
+	m.serve(name, "stop")
+end
+

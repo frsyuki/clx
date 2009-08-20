@@ -3,7 +3,7 @@ class ModGroup
 	def initialize
 		@groups = []
 		@on_all = []
-		@on = []
+		@on = {}
 	end
 
 	def call(*args)
@@ -19,7 +19,7 @@ class ModGroup
 				procs << Proc.new do
 					unless @groups.include?(name)
 						@groups.push(name)
-						@on_all.each {|block| block.call(match) }
+						do_on_all(match)
 					end
 				end
 
@@ -27,7 +27,7 @@ class ModGroup
 				procs << Proc.new do
 					if @groups.include?(name)
 						@groups.delete(name)
-						@on_all.each {|block| block.call(match) }
+						do_on_all(match)
 					end
 				end
 
@@ -57,6 +57,7 @@ class ModGroup
 	private
 	def do_on_all(match)
 		@on_all.each {|block| block.call(match) }
+		do_on(match)
 	end
 
 	def do_on(match)
@@ -69,6 +70,11 @@ MOD.info['group'] = []
 m = ModGroup.new
 core_method :group, m
 
-core_def :on_all, m.method(:on_all)
-core_def :on, m.method(:on)
+core_def :on_all do |&block|
+	m.on(&block)
+end
+
+core_def :on do |match, &block|
+	m.on(match, &block)
+end
 
