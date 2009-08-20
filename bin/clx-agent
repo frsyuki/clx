@@ -14,9 +14,9 @@ opt = {
 	:manager => nil,
 	:keepalive_interval => 1.0,
 	:load_path => nil,
-	:var_dir => nil,
 	:listen => "<any>:#{CLX::AGENT_DEFAULT_PORT}",
 	:info => {},
+	:cmd_serve => nil,
 }
 
 op = OptionParser.new
@@ -27,17 +27,17 @@ op.on('-f', "--config <clx-agent.conf>",
 op.on('-m', "--manager <address[:port]>",
 			"manager address") {|s| opt[:manager] = s }
 
-op.on('-s', "--load-path DIR",
+op.on('-r', "--load-path DIR",
 			"path to module directory") {|s| opt[:load_path] = s }
-
-op.on('-o', "--var DIR",
-			"pid directory") {|s| opt[:var_dir] = s }
 
 op.on('-l', "--listen <[address:]port>",
 			"listen port") {|s| opt[:listen] = s }
 
 op.on('-i', "--interval SEC=#{opt[:keepalive_interval]}",
 			"keepalive interval", Numeric) {|n| opt[:keepalive_interval] = n }
+
+op.on('-c', "--serve PATH",
+			"path to serve command") {|s| opt[:cmd_serve] = s }
 
 op.banner += " [key=match ...]"
 
@@ -76,10 +76,6 @@ if file = opt[:config]
 			conf[:load_path] = path
 		end
 
-		def var_dir(path)
-			conf[:var_dir] = path
-		end
-
 		def info
 			conf[:info] ||= {}
 		end
@@ -106,9 +102,9 @@ if file = opt[:config]
 end
 
 
-if !opt[:load_path] || !opt[:var_dir]
+if !opt[:load_path]
 	puts op.to_s
-	puts "load-path and var-dir are required"
+	puts "load-path is required"
 	exit 1
 end
 
@@ -130,8 +126,8 @@ config = {
 	:keepalive_interval => opt[:keepalive_interval],
 	:port => listen_port,
 	:manager  => opt[:manager],
-	:var_dir => opt[:var_dir],
 	:info   => opt[:info],
+	:cmd_serve => opt[:cmd_serve],
 }
 
 core = CLX::Core.new(listen_host, listen_port, config)

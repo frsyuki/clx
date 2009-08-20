@@ -186,16 +186,16 @@ class ModService
 	end
 end
 
-m = ModService.new
-core_method :service, m
-core_method :svc, m
-
-core_def :service do |name, &mod|
-	svc = Service.new(name, &mod)
-	m.add(name, svc)
-end
-
-on_all do |match|
-	m.on_all(match)
-end
+#m = ModService.new
+#core_method :service, m
+#core_method :svc, m
+#
+#core_def :service do |name, &mod|
+#	svc = Service.new(name, &mod)
+#	m.add(name, svc)
+#end
+#
+#on_all do |match|
+#	m.on_all(match)
+#end
 
