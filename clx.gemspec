@@ -1,12 +1,12 @@
 Gem::Specification.new do |s|
   #s.platform = Gem::Platform::CURRENT
   s.name = "clx"
-  s.version = "0.0.3"
+  s.version = "0.0.4"
   s.summary = "clx"
   s.author = "FURUHASHI Sadayuki"
   s.email = "frsyuki@users.sourceforge.jp"
-  s.homepage = "http://.../"
-  s.rubyforge_project = "clx"
+  #s.homepage = "http://.../"
+  #s.rubyforge_project = "clx"
   s.require_paths = ["lib"]
   s.executables << "clx" << "clx-agent" << "clx-manager"
   s.add_dependency "msgpack", ">= 0.3.1"
