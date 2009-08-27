@@ -261,12 +261,17 @@ class Client
 		@loop = loop
 		@host = host
 		@port = port
-		rs = RevSocket.connect(host, port)
+		@rs = RevSocket.connect(host, port)
 		@s = ClientSession.new(loop)
-		rs.session = @s
-		loop.attach(rs)
+		@rs.session = @s
+		loop.attach(@rs)
 	end
 	attr_reader :loop, :host, :port
+
+	def close
+		@rs.detach
+		@s.close
+	end
 
 	def send(method, *args)
 		@s.send(method, *args)
@@ -278,10 +283,6 @@ class Client
 
 	def call(method, *args)
 		@s.call(method, *args)
-	end
-
-	def close
-		@s.close
 	end
 
 	def timeout

@@ -16,9 +16,12 @@ if manager
 	core_timer(CONFIG[:keepalive_interval]) do
 		begin
 			c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
-			c.timeout = 1.0
-			c.call(:keepalive, self_addr, MOD.info['host'])
-			c.close
+			begin
+				c.timeout = 1.0
+				c.call(:keepalive, self_addr, MOD.info['host'])
+			ensure
+				c.close
+			end
 		rescue
 			p $!
 		end
