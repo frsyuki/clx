@@ -137,7 +137,7 @@ when "search"
 
 	op = OptionParser.new
 	op.on('-t', "--timeout SEC=#{opt[:timeout]}",
-				"timeout time", Numeric) {|n| opt[:timeout] = n }
+				"timeout time", Float) {|n| opt[:timeout] = n }
 	op.on('-p', "--port PORT=#{opt[:port]}",
 				"port", Integer) {|i| opt[:port] = i }
 	op.on('-a', "--add",

@@ -34,7 +34,7 @@ op.on('-l', "--listen <[address:]port>",
 			"listen port") {|s| opt[:listen] = s }
 
 op.on('-i', "--interval SEC=#{opt[:keepalive_interval]}",
-			"keepalive interval", Numeric) {|n| opt[:keepalive_interval] = n }
+			"keepalive interval", Float) {|n| opt[:keepalive_interval] = n }
 
 op.on('-c', "--serve PATH",
 			"path to serve command") {|s| opt[:cmd_serve] = s }

@@ -43,6 +43,7 @@ module RPCSocket
 	def on_close
 		return unless @session
 		@session.on_close(self)
+		@session = nil
 	rescue
 		nil
 	end
@@ -190,7 +191,8 @@ class ClientSession
 		raise "unexpected response message"
 	end
 
-	def on_close
+	def on_close(sock)
+		@sock = nil
 		# FIXME
 	end
 
@@ -232,8 +234,9 @@ class ServerSession
 		raise "unexpected response message"
 	end
 
-	def on_close
+	def on_close(sock)
 		# do nothing
+		@sock = nil
 	end
 end
 

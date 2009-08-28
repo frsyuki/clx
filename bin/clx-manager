@@ -25,7 +25,7 @@ op.on('-l', "--listen <[address:]port>",
 			"listen port") {|s| opt[:listen] = s }
 
 op.on('-i', "--interval SEC=#{opt[:timer_interval]}",
-			"timer interval", Numeric) {|n| opt[:timer_interval] = n }
+			"timer interval", Float) {|n| opt[:timer_interval] = n }
 
 op.on('-t', "--limit LIMIT=#{opt[:timeout_limit]}",
 			"timeout limit count", Integer) {|i| opt[:timeout_limit] = i }
