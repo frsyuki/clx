@@ -4,7 +4,7 @@ begin
 require 'rubygems'
 rescue Exception
 end
-require 'msgpack/rpc'
+require 'clx/rpc'
 require 'clx/default'
 require 'clx/addr'
 require 'yaml'
@@ -40,7 +40,7 @@ def connect_manager
 	mgr_host, mgr_port = mgr.split(':',2)
 	mgr_port ||= CLX::MANAGER_DEFAULT_PORT
 
-	c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+	c = CLX::RPC::Client.new(mgr_host, mgr_port)
 	c.timeout = TIMEOUT
 	c
 end
@@ -54,7 +54,7 @@ def get_agents
 		mgr_host, mgr_port = mgr.split(':',2)
 		mgr_port ||= CLX::MANAGER_DEFAULT_PORT
 
-		c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+		c = CLX::RPC::Client.new(mgr_host, mgr_port)
 		c.timeout = TIMEOUT
 		begin
 			result = c.call(:agents)
@@ -164,7 +164,7 @@ when "search"
 			while true
 				begin
 					msg, addr = sock.recvfrom(2048)
-					addr, hostname = MessagePack.unpack(msg)
+					addr, hostname = CLX.unpack(msg)
 					host, port = Address.parse(addr)
 					agents["#{host}:#{port}"] = hostname
 					puts "#{hostname}:\t#{host}:#{port}"
@@ -191,11 +191,11 @@ end
 agents = get_agents
 
 
-lo = MessagePack::RPC::Loop.new
+lo = CLX::RPC::Loop.new
 
 ## check matches
 agents = agents.map do |host, port, hostname|
-	client = MessagePack::RPC::Client.new(host, port, lo)
+	client = CLX::RPC::Client.new(host, port, lo)
 	client.timeout = TIMEOUT
 
 	reqs = matches.map {|key, match|

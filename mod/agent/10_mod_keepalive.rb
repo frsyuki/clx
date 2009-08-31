@@ -15,7 +15,7 @@ if manager
 
 	core_timer(CONFIG[:keepalive_interval]) do
 		begin
-			c = MessagePack::RPC::Client.new(mgr_host, mgr_port)
+			c = CLX::RPC::Client.new(mgr_host, mgr_port)
 			begin
 				c.timeout = 1.0
 				c.call(:keepalive, self_addr, MOD.info['host'])

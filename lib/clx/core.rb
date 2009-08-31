@@ -1,4 +1,4 @@
-require 'msgpack/rpc'
+require 'clx/rpc'
 
 module CLX
 
@@ -6,7 +6,7 @@ class Core
 
 	def initialize(host, port, config, loop = Rev::Loop.new)
 		@methods = {}
-		@svr = MessagePack::RPC::Server.new(loop)
+		@svr = CLX::RPC::Server.new(loop)
 
 		core = self
 		svr  = @svr
@@ -42,7 +42,7 @@ class Core
 	end
 
 
-	# MessagePack::RPC::Server
+	# CLX::RPC::Server
 	def send(name, *args)
 		if block = @methods[name.to_sym]
 			block.call(*args)

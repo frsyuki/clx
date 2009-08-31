@@ -4,7 +4,8 @@ require 'rev'
 # FIXME timeout
 require 'timeout'
 
-module MessagePack
+#module MessagePack
+module CLX
 module RPC
 
 
@@ -329,5 +330,6 @@ end
 
 
 end  # module RPC
-end  # module MessagePack
+end  # module CLX
+#end  # module MessagePack
 
