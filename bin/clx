@@ -180,7 +180,7 @@ when "search"
 			while true
 				begin
 					msg, addr = sock.recvfrom(2048)
-					addr, hostname = CLX.unpack(msg)
+					addr, hostname = MessagePack.unpack(msg)
 					host, port = Address.parse(addr)
 					agents["#{host}:#{port}"] = hostname
 					puts "#{hostname}:\t#{host}:#{port}"
