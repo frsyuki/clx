@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.executables << "clx" << "clx-agent" << "clx-manager"
   s.add_dependency "msgpack", ">= 0.3.1"
-  s.add_dependency "rev", ">= 0.2.4"
+  s.add_dependency "rev", ">= 0.3.0"
 	s.files = ["bin/**/*", "lib/**/*", "mod/**/*"].map {|g| Dir.glob(g) }.flatten +
 		%w[NOTICE README.md]
 end
