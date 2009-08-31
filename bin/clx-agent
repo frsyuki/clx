@@ -118,22 +118,12 @@ if file = opt[:config]
 end
 
 
-if !opt[:load_path]
-	puts op.to_s
-	puts "load-path is required"
-	exit 1
-end
-
-
 if opt[:listen].to_s.to_i.to_s == opt[:listen].to_s
 	opt[:listen] = "<any>:#{opt[:listen]}"
 end
 
 listen_host, listen_port = opt[:listen].to_s.split(':',2)
 listen_port ||= CLX::AGENT_DEFAULT_PORT
-
-
-load_glob = "#{opt[:load_path]}/*.rb"
 
 
 config = {
@@ -148,7 +138,10 @@ config = {
 
 core = CLX::Core.new(listen_host, listen_port, config)
 core.scan_module("#{CLX::MOD_DIR}/agent/*.rb")
-core.scan_module(load_glob)
+if load_path = opt[:load_path]
+	load_glob = "#{load_path}/*.rb"
+	core.scan_module(load_glob)
+end
 
 while true
 	begin
