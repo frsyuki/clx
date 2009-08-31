@@ -11,6 +11,19 @@ clx is a simple cluster management tool.
   - run same command on all hosts who belong to a group
 
 
+## Quick Start
+    gem build clx.gemspec
+    gem install clx-*.gem
+
+    clx-agent -r ./example &
+    clx search
+
+    clx ip=127.0.0.1 group +test
+    clx group
+    clx group=test run df -h
+    clx group=test do scp ./clx.gemspec [[ip]]:/tmp/
+
+
 ## Installation
 
 Following libraries are required to use clx:
