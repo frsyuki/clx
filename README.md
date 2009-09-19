@@ -12,6 +12,7 @@ clx is a simple cluster management tool.
 
 
 ## Quick Start
+
     gem build clx.gemspec
     gem install clx-*.gem
 
@@ -98,7 +99,6 @@ Command is one of following:
 **do COMMAND ARGS ...** run the COMMAND with ARGS on this host for the hosts.
 Arugments surrounded with [[ ]] like **[[ip]]** are replaced for the host.
 
-
 ### Example
 
     clx ip=192.168.0.[[1-10] group +a
@@ -106,8 +106,14 @@ Arugments surrounded with [[ ]] like **[[ip]]** are replaced for the host.
     clx group=a run uptime
     clx group=b run df -h
 
+#### do command
     clx group=a do echo [[ip]]
     clx do scp ./deploy.it [[ip]]:/tmp/
+
+#### opt module
+    [              ]$ clx ip=192.168.0.[[10-20]] setopt mykey myvalue
+    [on 192.16.0.10]$ clx-opt mykey    #=> myvalue
+
 
 ## License
 
