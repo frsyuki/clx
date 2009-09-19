@@ -40,7 +40,7 @@ op.parse!(ARGV)
 key   = ARGV.shift
 value = ARGV.shift
 
-unless key && ARGV.empty?
+unless ARGV.empty?
 	puts op.to_s
 	exit 1
 end

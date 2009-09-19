@@ -25,8 +25,12 @@ class ModOpt
 		@opt[key] = value
 	end
 
-	def getopt(key)
-		@opt[key]
+	def getopt(key = nil)
+		if key
+			@opt[key]
+		else
+			@opt
+		end
 	end
 end
 
