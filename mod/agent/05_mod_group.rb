@@ -21,6 +21,7 @@ class ModGroup
 		@groups = []
 		@on_all = []
 		@on = {}
+		MOD.info['group'] = @groups
 	end
 
 	def call(*args)
@@ -60,7 +61,6 @@ class ModGroup
 
 	def on_all(&block)
 		@on_all.push(block)
-		MOD.info['group'] = @groups
 	end
 
 	def on(match, &block)
@@ -81,8 +81,6 @@ class ModGroup
 		(@on[match] || []).each {|block| block.call }
 	end
 end
-
-MOD.info['group'] = []
 
 m = ModGroup.new
 core_method :group, m
