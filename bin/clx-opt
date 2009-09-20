@@ -24,6 +24,8 @@ require 'clx/rpc'
 require 'clx/default'
 require 'optparse'
 
+TIMEOUT = 5.0
+
 opt = {
 	:host => "127.0.0.1:#{CLX::AGENT_DEFAULT_PORT}",
 }
@@ -49,6 +51,7 @@ host, port = opt[:host].to_s.split(':',2)
 port ||= CLX::AGENT_DEFAULT_PORT
 
 client = CLX::RPC::Client.new(host, port)
+client.timeout = TIMEOUT
 
 if value
 	ret = client.call(:setopt, key, value)
