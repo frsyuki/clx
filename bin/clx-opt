@@ -56,8 +56,10 @@ else
 	ret = client.call(:getopt, key)
 end
 
-if !ret.is_a?(String) && !ret.is_a?(Numeric)
-	$stderr.puts ret.inspect
+
+$stderr.puts "inspect: #{ret.inspect}"
+
+unless ret.nil?
+	puts ret
 end
-puts ret
 
