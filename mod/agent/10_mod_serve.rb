@@ -37,6 +37,8 @@ class ModServe
 			run_serve name, "term"
 		when "kill"
 			run_serve name, "kill"
+		else
+			raise "unknown command: #{cmd.inspect}"
 		end
 	end
 
