@@ -55,6 +55,9 @@ op.on('-i', "--interval SEC=#{opt[:keepalive_interval]}",
 op.on('-c', "--serve PATH",
 			"path to serve command") {|s| opt[:cmd_serve] = s }
 
+op.on('-o', "--serve-opt PATH",
+			"serve command option") {|s| opt[:cmd_serve_opt] = s }
+
 op.banner += " [key=match ...]"
 
 
@@ -134,6 +137,7 @@ config = {
 	:manager  => opt[:manager],
 	:info   => opt[:info],
 	:cmd_serve => opt[:cmd_serve],
+	:cmd_serve_opt => opt[:cmd_serve_opt],
 }
 
 core = CLX::Core.new(listen_host, listen_port, config)

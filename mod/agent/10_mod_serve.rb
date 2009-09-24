@@ -20,6 +20,7 @@ require 'shellwords'
 class ModServe
 	def initialize
 		@cmd_serve = CONFIG[:cmd_serve] || "serve"
+		@cmd_serve_opt = CONFIG[:cmd_serve_opt] || ""
 	end
 
 	def serve(name, cmd, *args)
@@ -40,7 +41,7 @@ class ModServe
 	end
 
 	def run_serve(*args)
-		out = `#{shell_line(@cmd_serve, *args)} 2>&1`
+		out = `#{shell_line(@cmd_serve, *args)} #{cmd_serve_opt} 2>&1`
 		out = "ok" if out.empty?
 		out
 	end
