@@ -43,7 +43,7 @@ class ModServe
 	end
 
 	def run_serve(*args)
-		out = `#{shell_line(@cmd_serve, *args)} #{cmd_serve_opt} 2>&1`
+		out = `#{shell_line(@cmd_serve, *args)} #{@cmd_serve_opt} 2>&1`
 		out = "ok" if out.empty?
 		out
 	end
