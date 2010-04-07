@@ -114,6 +114,9 @@ class RevSocket < ::Rev::TCPSocket
 
 			break if @buffer.length <= @nread
 		end
+
+	rescue Exception
+		close
 	end
 
 	def send_message(msg)

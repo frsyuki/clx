@@ -147,14 +147,13 @@ if load_path = opt[:load_path]
 	core.scan_module(load_glob)
 end
 
-while true
-	begin
-		core.run
-	rescue
-		$stderr.puts $!.to_s
-		$!.backtrace.each do |line|
-			$stderr.puts "  #{line}"
-		end
+begin
+	core.run
+rescue
+	$stderr.puts $!.to_s
+	$!.backtrace.each do |line|
+		$stderr.puts "  #{line}"
 	end
+	exit 1
 end
 
