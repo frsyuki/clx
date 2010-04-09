@@ -62,7 +62,7 @@ core_method :service, m.method(:serve)
 core_def    :service, m.method(:serve)
 
 %w[start stop status stat term kill].each do |cmd|
-	core_def :start do |name|
+	core_def cmd do |name|
 		m.serve(name, cmd)
 	end
 end
